@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>할 일 추적기</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      background-color: #f9f9f9;
+    }
+    h1 {
+      text-align: center;
+    }
+    .task {
+      margin-bottom: 40px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      background-color: #fff;
+      border-radius: 8px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(7, 40px);
+      grid-gap: 5px;
+      margin-top: 10px;
+    }
+    .box {
+      width: 40px;
+      height: 40px;
+      background-color: #eee;
+      border: 1px solid #ccc;
+      cursor: pointer;
+    }
+    .box.checked {
+      background-color: var(--color);
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-top: 20px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🌟 할 일 추적기</h1>
+
+  <div id="taskList"></div>
+
+  <button onclick="addTask()">➕ 할 일 추가</button>
+
+  <script>
+    const taskList = document.getElementById('taskList');
+    let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+
+    function saveTasks() {
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+
+    function addTask() {
+      const name = prompt("할 일 이름을 입력하세요");
+      const emoji = prompt("이모티콘을 입력하세요 (예: 💪)");
+      const color = prompt("RGB 색상 입력 (예: 255,100,100)");
+
+      if (!name || !emoji || !color) return;
+
+      const task = {
+        name,
+        emoji,
+        color: `rgb(${color})`,
+        progress: Array(28).fill(false),
+        stars: 0
+      };
+
+      tasks.push(task);
+      saveTasks();
+      renderTasks();
+    }
+
+    function renderTasks() {
+      taskList.innerHTML = '';
+      tasks.forEach((task, taskIndex) => {
+        const div = document.createElement('div');
+        div.className = 'task';
+
+        const title = document.createElement('h3');
+        title.textContent = `${task.emoji} ${task.name} ${'⭐'.repeat(Number(task.stars))}`;
+        div.appendChild(title);
+
+        const grid = document.createElement('div');
+        grid.className = 'grid';
+
+        task.progress.forEach((checked, i) => {
+          const box = document.createElement('div');
+          box.className = 'box';
+          if (checked) {
+            box.classList.add('checked');
+            box.style.setProperty('--color', task.color);
+          }
+          box.onclick = () => {
+            task.progress[i] = true;
+            saveTasks();
+            checkReset(taskIndex);
+            renderTasks();
+          };
+          grid.appendChild(box);
+        });
+
+        div.appendChild(grid);
+        taskList.appendChild(div);
+      });
+    }
+
+    function checkReset(index) {
+      const task = tasks[index];
+      const allChecked = task.progress.every(p => p === true);
+      if (allChecked) {
+        alert(`🎉 '${task.name}' 한 달 완료! ⭐이 추가됩니다.`);
+        task.progress = Array(28).fill(false);
+        task.stars += 1;
+        saveTasks();
+      }
+    }
+
+    function resetMonthly() {
+      const today = new Date();
+      const lastReset = localStorage.getItem('lastReset');
+      const currentMonth = today.getMonth();
+
+      if (lastReset != currentMonth) {
+        tasks.forEach(task => task.progress = Array(28).fill(false));
+        localStorage.setItem('lastReset', currentMonth);
+        saveTasks();
+      }
+    }
+
+    resetMonthly();
+    renderTasks();
+  </script>
+
+</body>
+</html>
